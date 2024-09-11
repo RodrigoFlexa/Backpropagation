@@ -1,26 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-# Funções de ativação
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-def sigmoid_derivada(x):
-    return x * (1 - x)
-
-def relu(x):
-    return np.maximum(0, x)
-
-def relu_derivada(x):
-    return np.where(x > 0, 1, 0)
+from funcoes_ativacao import sigmoid, sigmoid_derivada, relu, relu_derivada, linear, linear_derivada, tanh, tanh_derivada
 
 class NeuralNetwork:
-    def __init__(self, n_entradas, n_saidas, camadas_escondidas, func_ativacao='sigmoid'):
-        # Inicialização da rede neural
+    def __init__(self, n_entradas, n_saidas, n_neuronios_escondidos, func_ativacao='sigmoid', seed=None):
+        # Inicialização da rede neural com apenas uma camada escondida
         self.n_entradas = n_entradas
         self.n_saidas = n_saidas
-        self.camadas_escondidas = camadas_escondidas
+        self.n_neuronios_escondidos = n_neuronios_escondidos
         
+        if seed is not None:
+            np.random.seed(seed)
+
         # Configurar função de ativação
         if func_ativacao == 'sigmoid':
             self.func_ativacao = sigmoid
@@ -28,25 +19,24 @@ class NeuralNetwork:
         elif func_ativacao == 'relu':
             self.func_ativacao = relu
             self.func_ativacao_derivada = relu_derivada
+        elif func_ativacao == 'linear':
+            self.func_ativacao = linear
+            self.func_ativacao_derivada = linear_derivada
+        elif func_ativacao == 'tanh':
+            self.func_ativacao = tanh
+            self.func_ativacao_derivada = tanh_derivada
         else:
-            raise ValueError("Função de ativação não reconhecida: use 'sigmoid' ou 'relu'.")
+            raise ValueError("Função de ativação não reconhecida: use 'sigmoid', 'relu', 'linear' ou 'tanh'.")
 
-        # Inicializar pesos e biases para cada camada
-        self.pesos = []
-        self.biases = []
-
-        # Pesos entre entrada e primeira camada escondida
-        self.pesos.append(np.random.randn(n_entradas, camadas_escondidas[0]))
-        self.biases.append(np.zeros((1, camadas_escondidas[0])))
-
-        # Pesos e biases entre as camadas escondidas
-        for i in range(len(camadas_escondidas) - 1):
-            self.pesos.append(np.random.randn(camadas_escondidas[i], camadas_escondidas[i+1]))
-            self.biases.append(np.zeros((1, camadas_escondidas[i+1])))
-
-        # Pesos entre última camada escondida e camada de saída
-        self.pesos.append(np.random.randn(camadas_escondidas[-1], n_saidas))
-        self.biases.append(np.zeros((1, n_saidas)))
+        # Inicializar pesos e biases
+        self.pesos = [
+            np.random.randn(n_entradas, n_neuronios_escondidos),  # Pesos da entrada para a camada escondida
+            np.random.randn(n_neuronios_escondidos, n_saidas)  # Pesos da camada escondida para a saída
+        ]
+        self.biases = [
+            np.zeros((1, n_neuronios_escondidos)),  # Biases da camada escondida
+            np.zeros((1, n_saidas))  # Biases da camada de saída
+        ]
 
         # Armazenar o histórico de erro e acurácia
         self.historico_mse_treino = []
@@ -54,41 +44,32 @@ class NeuralNetwork:
         self.historico_acuracia_validacao = []
 
     def forward(self, X):
-        # Realiza o forward pass
-        self.ativacoes = [X]
-        self.zs = []
+        # Realiza o forward pass com apenas uma camada escondida
+        self.net_entrada = X
+        self.net_oculta = np.dot(X, self.pesos[0]) + self.biases[0]  # Entrada para a camada escondida
+        self.out_oculta = self.func_ativacao(self.net_oculta)  # Ativação da camada escondida
 
-        # Propagar pelas camadas
-        entrada = X
-        for i in range(len(self.pesos) - 1):
-            z = np.dot(entrada, self.pesos[i]) + self.biases[i]
-            self.zs.append(z)
-            ativacao = self.func_ativacao(z)
-            self.ativacoes.append(ativacao)
-            entrada = ativacao
+        self.net_saida = np.dot(self.out_oculta, self.pesos[1]) + self.biases[1]  # Entrada para a camada de saída
 
-        # Camada de saída
-        z_saida = np.dot(entrada, self.pesos[-1]) + self.biases[-1]
-        self.zs.append(z_saida)
-        saida = sigmoid(z_saida)  # Supondo sigmoid para a camada de saída
-        self.ativacoes.append(saida)
-
-        return saida
+        self.out_saida = sigmoid(self.net_saida)  # Ativação da camada de saída (sigmoid)
+        return self.out_saida
 
     def backpropagation(self, X, y, taxa_aprendizagem):
-        # Realiza o backpropagation para ajustar os pesos e biases
-        saida = self.forward(X)
-        erro = y - saida
+        saida = self.forward(X)  # Saída da rede
+        erro = y - saida  # Erro/derivada da função de custo MSE em relação à saída da rede
 
-        deltas = [erro * sigmoid_derivada(saida)]
+        # Passo 1: Calcula o delta da camada de saída
+        delta_saida = erro * self.func_ativacao_derivada(saida)
 
-        for i in reversed(range(len(self.pesos) - 1)):
-            delta = np.dot(deltas[0], self.pesos[i+1].T) * self.func_ativacao_derivada(self.ativacoes[i+1])
-            deltas.insert(0, delta)
+        # Passo 2: Calcula o delta da camada escondida
+        delta_oculta = np.dot(delta_saida, self.pesos[1].T) * self.func_ativacao_derivada(self.out_oculta)
 
-        for i in range(len(self.pesos)):
-            self.pesos[i] += np.dot(self.ativacoes[i].T, deltas[i]) * taxa_aprendizagem
-            self.biases[i] += np.sum(deltas[i], axis=0, keepdims=True) * taxa_aprendizagem
+        # Passo 3: Atualiza os pesos e biases
+        self.pesos[1] += np.dot(self.out_oculta.T, delta_saida) * taxa_aprendizagem
+        self.biases[1] += np.sum(delta_saida, axis=0, keepdims=True) * taxa_aprendizagem
+        
+        self.pesos[0] += np.dot(X.T, delta_oculta) * taxa_aprendizagem
+        self.biases[0] += np.sum(delta_oculta, axis=0, keepdims=True) * taxa_aprendizagem
 
     def calcular_acuracia(self, X, y):
         previsoes = self.prever(X)
@@ -100,7 +81,7 @@ class NeuralNetwork:
         mse = np.mean(np.square(y - saida))
         return mse
 
-    def treinar(self, X, y, X_validacao, y_validacao, epochs=1000, taxa_aprendizagem=0.01, early_stopping_limit=5):
+    def treinar(self, X, y, X_validacao, y_validacao, epochs=1000, taxa_aprendizagem=0.01, early_stopping_limit=5, verbose='n'):
         n_samples = X.shape[0]
         melhor_erro_validacao = float('inf')
         epochs_erro_melhorou = 0
@@ -121,7 +102,8 @@ class NeuralNetwork:
             self.historico_mse_validacao.append(mse_validacao)
             self.historico_acuracia_validacao.append(acuracia_validacao)
 
-            print(f"Época {epoch+1}/{epochs}, Erro de Treino MSE: {mse_treino:.6f}, Erro de Validação MSE: {mse_validacao:.6f}, Acurácia de Validação: {acuracia_validacao:.6f}")
+            if verbose == 'y':
+                print(f"Época {epoch+1}/{epochs}, Erro de Treino MSE: {mse_treino:.4f}, Erro de Validação MSE: {mse_validacao:.4f}, Acurácia de Validação: {acuracia_validacao:.4f}")
 
             # Parada antecipada
             if mse_validacao < melhor_erro_validacao:
@@ -131,11 +113,32 @@ class NeuralNetwork:
                 epochs_erro_melhorou += 1
 
             if epochs_erro_melhorou >= early_stopping_limit:
-                print(f"Parada antecipada na época {epoch+1} devido ao aumento do erro na validação.")
+                if verbose == 'y':
+                    print(f"Parada antecipada na época {epoch+1} devido ao aumento do erro na validação.")
                 break
 
     def prever(self, X):
         return self.forward(X)
+
+    def mostrar_pesos(self,my_string):
+        print("####################################################################################################################################")
+        print(f'{my_string} :')
+        print()
+        for i, (peso, bias) in enumerate(zip(self.pesos, self.biases)):
+            if i < len(self.pesos) - 1:
+                # Camadas intermediárias
+                print(f"\nCamada {i + 1}:")
+                print(f"  Matriz de pesos:")
+                print(peso)
+                print(f"  Biases: ")
+                print(bias[0])
+            else:
+                # Última camada (Camada de saída)
+                print(f"\nCamada de Saída:")
+                print(f"  Matriz de pesos:")
+                print(peso)
+                print(f"  Biases:")
+                print(bias[0])
 
     def plotar_resultados(self):
         # Gráfico de MSE (treino e validação)

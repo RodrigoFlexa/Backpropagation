@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-class DataSplitter:
+class Splitter:
     def __init__(self, dataset):
         """
         Inicializa a classe com o dataset. O dataset deve ser um DataFrame.

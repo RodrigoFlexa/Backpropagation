@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from nn import NeuralNetwork
 from utils.normalizador import Normalizador
-from utils.spliter import DataSplitter
+from utils.spliter import Splitter
 from sklearn.metrics import confusion_matrix
+
+SEED = 42
+np.random.seed(SEED)
 
 # Ler o dataset e definir os nomes das colunas
 dataset = pd.read_excel("dadosmamografia.xlsx")
@@ -20,7 +23,7 @@ dataset_normalizado = normalizador.normaliza(dataset.values)
 dataset_normalizado = pd.DataFrame(dataset_normalizado, columns=colunas)
 
 # Separar o dataset (60% treino, 20% teste, 20% validação)
-splitter = DataSplitter(dataset_normalizado)
+splitter = Splitter(dataset_normalizado)
 treino, teste, validacao = splitter.split_data(0.6, 0.2, 0.2)
 
 # Exibir o número de amostras em cada conjunto
@@ -40,10 +43,16 @@ X_teste = teste[['x1', 'x2', 'x3', 'x4', 'x5']].values
 y_teste = teste[['y']].values
 
 # Criar modelo com 2 camadas escondidas (4 neurônios na primeira, 3 na segunda)
-modelo = NeuralNetwork(n_entradas=5, n_saidas=1, camadas_escondidas=[16,16], func_ativacao='sigmoid')
+modelo = NeuralNetwork(n_entradas=5, n_saidas=1, n_neuronios_escondidos=4, func_ativacao='sigmoid',seed=SEED)
+
+print()
+modelo.mostrar_pesos('inicio')
 
 # Treinar o modelo (com validação cruzada e parada antecipada)
-modelo.treinar(X_treino, y_treino, X_validacao, y_validacao, epochs=1000, taxa_aprendizagem=0.01)
+modelo.treinar(X_treino, y_treino, X_validacao, y_validacao, epochs=1000, taxa_aprendizagem=0.01,verbose='n')
+
+print()
+modelo.mostrar_pesos('Fim')
 
 # Fazer previsões no conjunto de teste
 previsoes_teste = modelo.prever(X_teste)
