@@ -42,16 +42,17 @@ class NeuralNetwork:
         self.historico_mse_treino = []
         self.historico_mse_validacao = []
         self.historico_acuracia_validacao = []
-
+        self.historico_acuracia_treino = []
     def forward(self, X):
         # Realiza o forward pass com apenas uma camada escondida
         self.net_entrada = X
-        self.net_oculta = np.dot(X, self.pesos[0]) + self.biases[0]  # Entrada para a camada escondida
-        self.out_oculta = self.func_ativacao(self.net_oculta)  # Ativação da camada escondida
+
+        self.net_oculta = np.dot(X, self.pesos[0]) + self.biases[0]  
+        self.out_oculta = self.func_ativacao(self.net_oculta) 
 
         self.net_saida = np.dot(self.out_oculta, self.pesos[1]) + self.biases[1]  # Entrada para a camada de saída
-
-        self.out_saida = sigmoid(self.net_saida)  # Ativação da camada de saída (sigmoid)
+        self.out_saida = sigmoid(self.net_saida)  
+        
         return self.out_saida
 
     def backpropagation(self, X, y, taxa_aprendizagem):
@@ -96,11 +97,13 @@ class NeuralNetwork:
             mse_treino = self.calcular_mse(X, y)
             mse_validacao = self.calcular_mse(X_validacao, y_validacao)
             acuracia_validacao = self.calcular_acuracia(X_validacao, y_validacao)
+            acuracia_treino = self.calcular_acuracia(X,y)
 
             # Armazenar os MSEs e a acurácia
             self.historico_mse_treino.append(mse_treino)
             self.historico_mse_validacao.append(mse_validacao)
             self.historico_acuracia_validacao.append(acuracia_validacao)
+            self.historico_acuracia_treino.append(acuracia_treino)
 
             if verbose == 'y':
                 print(f"Época {epoch+1}/{epochs}, Erro de Treino MSE: {mse_treino:.4f}, Erro de Validação MSE: {mse_validacao:.4f}, Acurácia de Validação: {acuracia_validacao:.4f}")
@@ -140,22 +143,31 @@ class NeuralNetwork:
                 print(f"  Biases:")
                 print(bias[0])
 
-    def plotar_resultados(self):
+    def plotar_resultados(self,fontsize=18):
         # Gráfico de MSE (treino e validação)
         plt.figure(figsize=(10, 6))
         plt.plot(self.historico_mse_treino, label='Erro de Treino (MSE)', color='blue')
         plt.plot(self.historico_mse_validacao, label='Erro de Validação (MSE)', color='orange')
-        plt.title('Evolução do Erro Médio Quadrático (MSE)')
-        plt.xlabel('Épocas')
-        plt.ylabel('Erro Médio Quadrático')
-        plt.legend()
+        plt.title('Evolução do Erro Médio Quadrático (MSE)', fontsize=fontsize)
+        plt.xlabel('Épocas', fontsize=fontsize)
+        plt.ylabel('Erro Médio Quadrático', fontsize=fontsize)
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        plt.legend(fontsize=fontsize)
+        plt.grid(True)
         plt.show()
 
         # Gráfico de Acurácia
         plt.figure(figsize=(10, 6))
-        plt.plot(self.historico_acuracia_validacao, label='Acurácia de Validação', color='green')
-        plt.title('Evolução da Acurácia de Validação')
-        plt.xlabel('Épocas')
-        plt.ylabel('Acurácia')
-        plt.legend()
+        plt.plot(self.historico_acuracia_validacao, label='Acurácia de Validação', color='blue')
+        plt.plot(self.historico_acuracia_treino, label='Acurácia de Treino', color='orange')
+        plt.title('Evolução da Acurácia', fontsize=fontsize)
+        plt.xlabel('Épocas', fontsize=fontsize)
+        plt.ylabel('Acurácia', fontsize=fontsize)
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        plt.legend(fontsize=fontsize)
+        plt.grid(True)
         plt.show()
+
+

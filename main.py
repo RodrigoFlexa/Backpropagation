@@ -43,7 +43,7 @@ X_teste = teste[['x1', 'x2', 'x3', 'x4', 'x5']].values
 y_teste = teste[['y']].values
 
 # Criar modelo com 2 camadas escondidas (4 neurônios na primeira, 3 na segunda)
-modelo = NeuralNetwork(n_entradas=5, n_saidas=1, n_neuronios_escondidos=4, func_ativacao='sigmoid',seed=SEED)
+modelo = NeuralNetwork(n_entradas=5, n_saidas=1, n_neuronios_escondidos=16, func_ativacao='relu',seed=SEED)
 
 print()
 modelo.mostrar_pesos('inicio')
@@ -64,13 +64,13 @@ previsoes_binarias = np.where(previsoes_teste >= 0.5, 1, 0)
 acuracia = np.mean(previsoes_binarias == y_teste)
 print(f"Acurácia no conjunto de teste: {acuracia:.6f}")
 
-# Gerar a matriz de confusão
-matriz_confusao = confusion_matrix(y_teste, previsoes_binarias)
+# # Gerar a matriz de confusão
+# matriz_confusao = confusion_matrix(y_teste, previsoes_binarias)
 
-# Plotar a matriz de confusão
-# Gerar a matriz de confusão
+# # Plotar a matriz de confusão
+# # Gerar a matriz de confusão
 matriz_confusao = confusion_matrix(y_teste, previsoes_binarias)
 print(matriz_confusao)
 
 # Plotar os resultados (erro médio quadrático e acurácia)
-modelo.plotar_resultados()
+modelo.plotar_resultados(fontsize=25)
