@@ -43,7 +43,7 @@ X_teste = teste[['x1', 'x2', 'x3', 'x4', 'x5']].values
 y_teste = teste[['y']].values
 
 # Criar modelo com 2 camadas escondidas (4 neurônios na primeira, 3 na segunda)
-modelo = NeuralNetwork(n_entradas=5, n_saidas=1, n_neuronios_escondidos=16, func_ativacao='relu',seed=SEED)
+modelo = NeuralNetwork(n_entradas=5, n_saidas=1, n_neuronios_escondidos=32, func_ativacao='linear',seed=SEED)
 
 print()
 modelo.mostrar_pesos('inicio')

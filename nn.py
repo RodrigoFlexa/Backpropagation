@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from funcoes_ativacao import sigmoid, sigmoid_derivada, relu, relu_derivada, linear, linear_derivada, tanh, tanh_derivada
+from utils.funcoes_ativacao import sigmoid, sigmoid_derivada, relu, relu_derivada, linear, linear_derivada, tanh, tanh_derivada
 
 class NeuralNetwork:
     def __init__(self, n_entradas, n_saidas, n_neuronios_escondidos, func_ativacao='sigmoid', seed=None):
@@ -57,20 +57,27 @@ class NeuralNetwork:
 
     def backpropagation(self, X, y, taxa_aprendizagem):
         saida = self.forward(X)  # Saída da rede
-        erro = y - saida  # Erro/derivada da função de custo MSE em relação à saída da rede
 
-        # Passo 1: Calcula o delta da camada de saída
-        delta_saida = erro * self.func_ativacao_derivada(saida)
+        erro = (1/2) * (y - saida)**2  # Erro quadrático (apenas para visualização)
+
+        derivada_erro_em_rel_saida = saida - y
+
+        # Passo 1: Calcula o delta da camada de saída    
+        delta_saida = derivada_erro_em_rel_saida * self.func_ativacao_derivada(saida)
 
         # Passo 2: Calcula o delta da camada escondida
-        delta_oculta = np.dot(delta_saida, self.pesos[1].T) * self.func_ativacao_derivada(self.out_oculta)
+        delta_oculta = np.dot(delta_saida, self.pesos[1].T) * self.func_ativacao_derivada(self.out_oculta) 
 
-        # Passo 3: Atualiza os pesos e biases
-        self.pesos[1] += np.dot(self.out_oculta.T, delta_saida) * taxa_aprendizagem
-        self.biases[1] += np.sum(delta_saida, axis=0, keepdims=True) * taxa_aprendizagem
+        # Passo 3: Calcula as derivadas em relação aos pesos
+        derivada_erro_rel_peso_saida = np.dot(self.out_oculta.T, delta_saida)
+        derivada_erro_rel_peso_oculta = np.dot(X.T, delta_oculta)
+
+        # Passo 4: Atualiza os pesos e biases
+        self.pesos[1] -= derivada_erro_rel_peso_saida * taxa_aprendizagem
+        self.biases[1] -= np.sum(delta_saida, axis=0, keepdims=True) * taxa_aprendizagem
         
-        self.pesos[0] += np.dot(X.T, delta_oculta) * taxa_aprendizagem
-        self.biases[0] += np.sum(delta_oculta, axis=0, keepdims=True) * taxa_aprendizagem
+        self.pesos[0] -= derivada_erro_rel_peso_oculta * taxa_aprendizagem
+        self.biases[0] -= np.sum(delta_oculta, axis=0, keepdims=True) * taxa_aprendizagem
 
     def calcular_acuracia(self, X, y):
         previsoes = self.prever(X)
